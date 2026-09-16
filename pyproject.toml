@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "home-automation-system"
+version = "0.1.0"
+description = "Layered local home automation service for Tapo devices"
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv==1.1.1",
+    "tapo==0.9.0",
+]
+
+[project.scripts]
+home-automation = "home_automation_system.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.setuptools.packages.find]
+where = ["src"]

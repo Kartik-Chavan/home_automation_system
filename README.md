@@ -1,6 +1,6 @@
-# Tapo P110 Toggle
+# Home Automation System
 
-Small Python program that reads the current state of a local Tapo P110 plug and toggles it. It is intended for a plug controlling a laptop charger.
+Layered home automation service for local Tapo devices. The current use case reads and toggles a Tapo P110 plug connected to a laptop charger.
 
 ## Requirements
 
@@ -8,6 +8,21 @@ Small Python program that reads the current state of a local Tapo P110 plug and 
 - Tapo P110 on the same local network as the computer
 - Tapo account email and password
 - The `tapo` Python package
+
+## Project structure
+
+```text
+src/home_automation_system/
+	adapters/       External device integrations, currently Tapo
+	api/            Future HTTP/backend integration boundary
+	domain/         Device contracts and state models
+	infrastructure/ Future persistence and scheduling integrations
+	mcp/            Future MCP server integration boundary
+	services/       Application use cases
+	app.py          Dependency composition
+	cli.py          Command-line entrypoint
+tests/            Unit tests without physical-device access
+```
 
 ## Setup on Windows PowerShell
 
@@ -18,6 +33,13 @@ py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+For development and tests, also install:
+
+```powershell
+python -m pip install -r requirements-dev.txt
 ```
 
 Open `.env` and fill in your credentials:
@@ -31,15 +53,21 @@ The `.env` variables are:
 ```text
 TAPO_USERNAME=your-tapo-email@example.com
 TAPO_PASSWORD=your-tapo-password
-TAPO_DEVICE_IP=192.168.1.37
+TAPO_DEVICE_IP=your-device-ip
 ```
 
-The current P110 address found during setup was `192.168.1.37`.
+Set `TAPO_DEVICE_IP` to the current local IP shown in the Tapo app.
 
 ## Run
 
 ```powershell
-.\.venv\Scripts\python.exe .\main.py
+python -m home_automation_system
+```
+
+The compatibility command also remains available from the project root:
+
+```powershell
+python .\main.py
 ```
 
 The program prints the initial state, changes it once, and prints the resulting state:
@@ -52,18 +80,29 @@ Current state: ON
 
 Run it again to toggle the plug back off.
 
+Run the unit tests without contacting the physical plug:
+
+```powershell
+python -m pytest
+```
+
 ## Network behavior
 
-This program uses direct local control. It does not require internet access after the Python package and credentials are configured, but the computer must be able to reach the P110 on the same home network or through a VPN into that network. It will not work from an unrelated Wi-Fi or mobile network using a private address such as `192.168.1.37`.
+This program uses direct local control. It does not require internet access after the Python package and credentials are configured, but the computer must be able to reach the P110 on the same home network or through a VPN into that network. It will not work from an unrelated Wi-Fi or mobile network using a private address.
 
-The P110 receives its local IP address from the Wi-Fi router's DHCP service. The address changed from `192.168.1.33` to `192.168.1.37` after reconnecting. If the script times out, check the Tapo app under **Device Info** and update `TAPO_DEVICE_IP`. For a stable address, create a DHCP reservation in the router for the P110 MAC address.
+The P110 receives its local IP address from the Wi-Fi router's DHCP service. Its address changed after reconnecting. If the script times out, check the Tapo app under **Device Info** and update `TAPO_DEVICE_IP`. For a stable address, create a DHCP reservation in the router for the P110 MAC address.
 
-## Charger note
+## Prevent IP Changes
 
-The script toggles power immediately. Use it only with a charger and device setup where removing power is safe. Frequent hard power cuts can interrupt operating-system updates or file writes. A smart plug timer or controlled shutdown may be safer for a laptop.
+An internet outage can restart the router and reset its DHCP lease table. The router may then assign the P110 a different local IP address. This does not mean the P110 or Tapo changed it.
 
-## Security
+On the DIGISOL router:
 
-- `.env` is ignored by Git and must never be committed.
-- Do not commit or share the Tapo password.
-- Do not expose the P110's local control port directly to the internet.
+1. Open your router's admin address and sign in.
+2. Open **DHCP Settings** or **LAN Setup**.
+3. Choose **Address Reservation**, **Static Lease**, or **Edit Reserved IP Address**.
+4. Reserve the desired local IP for the P110's MAC address shown in the Tapo app.
+5. Save and reconnect the P110 if needed.
+
+Use the MAC address format required by your router. A DHCP reservation is safe, affects only this device, and can be removed later without changing other network settings.
+
