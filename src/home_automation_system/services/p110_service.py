@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 from home_automation_system.domain.devices import DeviceState, EnergyMonitoringPlug
@@ -69,6 +69,8 @@ class P110Service:
         self, start_datetime: datetime, end_datetime: datetime
     ) -> dict[str, object]:
         """Return hourly power data with explicit missing-reading statuses."""
+        start_datetime = _as_utc(start_datetime)
+        end_datetime = _as_utc(end_datetime)
         if start_datetime > end_datetime:
             raise ValueError("start_datetime must not be later than end_datetime")
         data: dict[str, object] = _serialize(
@@ -81,6 +83,13 @@ class P110Service:
             ]
             data["entries"] = add_power_reading_status(typed_entries)
         return data
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Convert an aware datetime to the exact UTC timezone Tapo requires."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("power-data timestamps must include a timezone")
+    return value.astimezone(timezone.utc)
 
 
 def _serialize(value: object) -> dict[str, object]:

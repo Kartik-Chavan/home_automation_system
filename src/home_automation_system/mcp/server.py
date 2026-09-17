@@ -8,6 +8,7 @@ from fastmcp import FastMCP
 from fastmcp.server.auth import AccessToken
 from fastmcp.server.auth.providers.github import GitHubProvider
 from fastmcp.server.dependencies import CurrentAccessToken
+from dotenv import load_dotenv
 
 from home_automation_system.app import create_p110_service
 from home_automation_system.config import Settings
@@ -41,6 +42,7 @@ class McpSettings:
     @classmethod
     def from_environment(cls) -> "McpSettings":
         """Load and validate MCP configuration from environment variables."""
+        load_dotenv()
         required_names: tuple[str, ...] = (
             "GITHUB_CLIENT_ID",
             "GITHUB_CLIENT_SECRET",
@@ -180,7 +182,11 @@ def create_server(
     async def get_device_usage(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
-        """Get aggregate P110 usage."""
+        """Get aggregate P110 usage totals and runtime counters.
+
+        This is a summary of today and the current month. It is not a custom
+        time-range query and does not answer questions about a specific night.
+        """
         _authorize("get_device_usage", access_token, server_settings.allowed_github_user_id)
         return await service.get_device_usage()
 
@@ -188,7 +194,10 @@ def create_server(
     async def get_current_power(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
-        """Get the P110 current power reading."""
+        """Get the P110 instantaneous power reading in watts.
+
+        This is the current load only, not energy consumed over a time range.
+        """
         _authorize("get_current_power", access_token, server_settings.allowed_github_user_id)
         return await service.get_current_power()
 
@@ -196,7 +205,12 @@ def create_server(
     async def get_energy_usage(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
-        """Get the P110 energy usage summary."""
+        """Get the P110 energy summary for today and the current month.
+
+        Use this for app-style summary values such as today's energy, monthly
+        energy, runtime, and estimated charge. It has no date parameters and
+        does not return a custom 'last night' interval.
+        """
         _authorize("get_energy_usage", access_token, server_settings.allowed_github_user_id)
         return await service.get_energy_usage()
 
@@ -206,7 +220,13 @@ def create_server(
         end_date: date,
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
-        """Get daily P110 energy data for a date range."""
+        """Get daily P110 energy totals for a date range.
+
+        Dates are calendar dates in the plug's local timezone. Use this for
+        daily energy consumption, not instantaneous power. For an overnight
+        interval crossing midnight, use the two affected calendar dates and
+        explain that the result is daily rather than an exact night-only total.
+        """
         _authorize("get_energy_data", access_token, server_settings.allowed_github_user_id)
         return await service.get_energy_data(start_date, end_date)
 
@@ -216,11 +236,20 @@ def create_server(
         end_datetime: datetime,
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
-        """Get hourly P110 power data for a time range."""
+        """Get hourly P110 power readings for a time range.
+
+        This returns watts per hourly bucket and does not directly return kWh.
+        The timestamps must include an explicit timezone and are interpreted in
+        UTC. Convert a user's local-time request such as 'last night' to UTC
+        before calling this tool. For an energy-consumption question, prefer
+        get_energy_usage or get_energy_data; do not report zero power readings
+        as zero energy unless the requested UTC interval is correct.
+        """
         _authorize("get_power_data", access_token, server_settings.allowed_github_user_id)
         return await service.get_power_data(start_datetime, end_datetime)
 
     return mcp
+
 
 
 def _create_service() -> P110Service:
