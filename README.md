@@ -86,6 +86,56 @@ Run the unit tests without contacting the physical plug:
 python -m pytest
 ```
 
+## Run MCP unattended on Windows
+
+The interactive `home-automation-mcp` command stops when its terminal closes.
+For unattended operation, run it as a Windows service with automatic restart.
+Tailscale runs separately as a Windows service, and its Funnel configuration
+persists across restarts.
+
+Using NSSM, install the service from an elevated PowerShell window:
+
+```powershell
+nssm install home-automation-mcp `
+	"C:\Drive F\Code\Project\home_automation_system\.venv\Scripts\home-automation-mcp.exe"
+```
+
+Configure the service with these values in NSSM:
+
+```text
+Application directory:
+C:\Drive F\Code\Project\home_automation_system
+
+Startup type:
+Automatic
+
+Restart action:
+Restart the application
+```
+
+Start it with:
+
+```powershell
+nssm start home-automation-mcp
+```
+
+Keep the MCP server's `.env` file in the application directory. It must
+contain the Tapo credentials, GitHub OAuth values, numeric GitHub allow-list
+ID, public MCP URL, and signing key described in
+`docs/remote_access_architecture.md`.
+
+Expose only the MCP port through Tailscale:
+
+```powershell
+tailscale funnel --bg 8765
+```
+
+Do not expose the web application's port. If the MCP process restarts, an AI
+client may need to reconnect because Streamable HTTP session state is held in
+memory. Tapo session expiry is handled automatically by refreshing the Tapo
+session and retrying the operation once. The host computer must remain powered
+on, connected to the internet, and able to reach the P110 over the local LAN.
+
 ## Network behavior
 
 This program uses direct local control. It does not require internet access after the Python package and credentials are configured, but the computer must be able to reach the P110 on the same home network or through a VPN into that network. It will not work from an unrelated Wi-Fi or mobile network using a private address.
