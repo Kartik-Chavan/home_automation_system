@@ -1,0 +1,469 @@
+{
+  "device_info": {
+    "ok": true,
+    "data": {
+      "avatar": "plug",
+      "charging_status": "normal",
+      "default_states": {
+        "state": {
+          "on": false
+        },
+        "type": "custom"
+      },
+      "device_id": "8022F0BF916A33B2DD49D403E999E9F025C54F03",
+      "device_on": false,
+      "fw_id": "00000000000000000000000000000000",
+      "fw_ver": "1.4.3 Build 251223 Rel.100616",
+      "has_set_location_info": true,
+      "hw_id": "FFB79ECBABD8D5DF9A8BEE18AE9A8EBB",
+      "hw_ver": "1.20",
+      "ip": "192.168.1.33",
+      "lang": "en_US",
+      "latitude": 210993,
+      "longitude": 790925,
+      "mac": "D4-D6-DF-A3-FD-45",
+      "model": "P110",
+      "nickname": "Tapo P110",
+      "oem_id": "48D37CC22E2B8C68DEDD1C23DF2AADB2",
+      "on_time": 0,
+      "overcurrent_status": "normal",
+      "overheat_status": "normal",
+      "power_protection_status": "normal",
+      "region": "Asia/Calcutta",
+      "rssi": -44,
+      "signal_level": 3,
+      "specs": "IN",
+      "ssid": "Bsnl-9545464765-2.4Ghz",
+      "time_diff": 330,
+      "type": "SMART.TAPOPLUG"
+    }
+  },
+  "device_usage": {
+    "ok": true,
+    "data": {
+      "power_usage": {
+        "past30": 141,
+        "past7": 141,
+        "today": 0
+      },
+      "saved_power": {
+        "past30": 1033,
+        "past7": 1033,
+        "today": 0
+      },
+      "time_usage": {
+        "past30": 1174,
+        "past7": 1174,
+        "today": 0
+      }
+    }
+  },
+  "current_power": {
+    "ok": true,
+    "data": {
+      "current_power": 0
+    }
+  },
+  "energy_usage": {
+    "ok": true,
+    "data": {
+      "current_power": 0,
+      "electricity_charge": [
+        0,
+        0,
+        0
+      ],
+      "local_time": "2026-09-17T00:58:53",
+      "month_energy": 141,
+      "month_runtime": 1174,
+      "today_energy": 0,
+      "today_runtime": 0
+    }
+  },
+  "energy_data_daily": {
+    "ok": true,
+    "data": {
+      "entries": [
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-09T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-10T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-11T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-12T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-13T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-14T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-15T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-16T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-17T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-18T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-19T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-20T18:30:00Z"
+        },
+        {
+          "energy": 87,
+          "start_date_time": "2026-09-21T18:30:00Z"
+        },
+        {
+          "energy": 54,
+          "start_date_time": "2026-09-22T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-23T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-24T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-25T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-26T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-27T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-28T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-29T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-09-30T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-01T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-02T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-03T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-04T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-05T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-06T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-07T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-08T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-09T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-10T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-11T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-12T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-13T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-14T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-15T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-16T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-17T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-18T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-19T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-20T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-21T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-22T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-23T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-24T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-25T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-26T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-27T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-28T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-29T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-30T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-10-31T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-01T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-02T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-03T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-04T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-05T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-06T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-07T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-08T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-09T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-10T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-11T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-12T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-13T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-14T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-15T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-16T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-17T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-18T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-19T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-20T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-21T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-22T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-23T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-24T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-25T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-26T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-27T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-28T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-29T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-11-30T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-01T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-02T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-03T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-04T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-05T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-06T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-07T18:30:00Z"
+        },
+        {
+          "energy": 0,
+          "start_date_time": "2026-12-08T18:30:00Z"
+        }
+      ],
+      "interval_length": 1440,
+      "local_time": "2026-09-17T00:58:53",
+      "start_date_time": "2026-09-09T18:30:00Z"
+    }
+  },
+  "power_data_hourly": {
+    "ok": false,
+    "error": "TypeError: argument 'start_date_time': expected a datetime with non-None tzinfo"
+  },
+  "on": {
+    "ok": true,
+    "data": null
+  },
+  "off": {
+    "ok": true,
+    "data": null
+  }
+}

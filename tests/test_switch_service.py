@@ -1,6 +1,7 @@
 import pytest
 
 from home_automation_system.domain.devices import DeviceState
+from home_automation_system.domain.energy import add_power_reading_status
 from home_automation_system.services.switch_service import SwitchService
 
 
@@ -28,3 +29,15 @@ async def test_toggle_inverts_switch_state(initial_state: bool) -> None:
 
     assert result.is_on is (not initial_state)
     assert switch.is_on is (not initial_state)
+
+
+def test_power_reading_status_distinguishes_missing_from_zero() -> None:
+    entries: list[dict[str, object]] = [
+        {"power": None},
+        {"power": 0},
+    ]
+
+    result: list[dict[str, object]] = add_power_reading_status(entries)
+
+    assert result[0] == {"power": None, "status": "no_data"}
+    assert result[1] == {"power": 0, "status": "measured"}
