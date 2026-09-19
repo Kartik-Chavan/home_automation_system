@@ -39,14 +39,15 @@ isn't you, even if they complete OAuth successfully.
 ```mermaid
 flowchart TD
     A[Claude / ChatGPT<br/>cloud app] -->|Internet — HTTPS<br/>via Tailscale Funnel| B[Home server<br/>FastMCP + FastAPI + tapo]
-    B --> D{GitHub OAuth<br/>username match?}
+    B --> D{GitHub OAuth<br/>numeric ID allow-list?}
     D -->|No — reject| E[403 Denied]
     D -->|Yes| C[Tapo P110<br/>via home Wi-Fi LAN]
 ```
 
 **Exposure:** exactly one port, publicly reachable, but every request must
-first complete GitHub OAuth *and* match the allow-listed username before any
-tool call reaches the plug. Everything else on the home server (the web app,
+first complete GitHub OAuth *and* match the allow-listed immutable numeric
+GitHub user ID before any tool call reaches the plug. Everything else on the
+home server (the web app,
 the plug-control internals) is not exposed by this path — Funnel only
 publishes the single port the MCP server listens on.
 
@@ -92,7 +93,7 @@ the official app works.
 | Path | Reachable from | Auth | What's exposed |
 |---|---|---|---|
 | Web app | Only your own Tailscale devices | Tailscale device login (implicit) | Nothing public |
-| AI agent (MCP) | Anywhere on the internet | GitHub OAuth + username allow-list | One port only, gated |
+| AI agent (MCP) | Anywhere on the internet | GitHub OAuth + numeric-ID allow-list | One port only, gated |
 | Official Tapo app | Anywhere on the internet | TP-Link account login | Entire cloud-relay path (TP-Link's infrastructure, not ours) |
 
 ## Security notes for the AI agent path
@@ -102,14 +103,40 @@ the official app works.
   OAuth + allow-list layer is what keeps this safe, not the URL being secret.
 - `GitHubProvider`'s default behavior only confirms "this is a genuine
   GitHub-authenticated user" — it does **not** restrict to a specific person.
-  The allow-list check (comparing the authenticated user's GitHub
-  username/ID against your own inside the tool functions) is required, not
-  optional, given the URL is public.
+  The allow-list check compares GitHub's immutable numeric user ID on every
+  tool call. Usernames are deliberately not used for authorization.
 - Only the MCP server's port should be handed to Funnel — the plug-control
   internals and the web app should stay on ports that are never passed to
   `tailscale funnel`, keeping them private even though the device itself has
   one public-facing port.
 
----
-*Next: sketch the actual FastMCP server code — tool definitions wrapping the
-`tapo` calls, the `GitHubProvider` setup, and the username allow-list check.*
+## MCP setup
+
+Create a GitHub OAuth App with this callback URL, where the port and hostname
+match the public MCP URL:
+
+```text
+https://mcp.example.com/auth/callback
+```
+
+Set these values in the ignored `.env` file:
+
+```text
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+ALLOWED_GITHUB_USER_ID=12345678
+MCP_PUBLIC_BASE_URL=https://mcp.example.com
+MCP_JWT_SIGNING_KEY=use-a-long-random-secret
+MCP_HOST=127.0.0.1
+MCP_PORT=8765
+```
+
+Start the server with `home-automation-mcp`. Funnel **only** the MCP port;
+never pass the web application's port or any other internal port to Funnel:
+
+```powershell
+tailscale funnel --bg 8765
+```
+
+The existing Tailscale-only web application path is unaffected and remains the
+primary and fallback control path.
