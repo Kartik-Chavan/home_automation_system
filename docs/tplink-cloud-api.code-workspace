@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../tplink-cloud-api"
+		},
+		{
+			"path": "../../tapo"
+		},
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../Notes"
+		}
+	],
+	"settings": {}
+}
