@@ -11,7 +11,9 @@ from fastmcp.server.dependencies import CurrentAccessToken
 from dotenv import load_dotenv
 
 from home_automation_system.app import create_p110_service
+from home_automation_system.application.tools import HomeAutomationTools
 from home_automation_system.config import Settings
+from home_automation_system.infrastructure.audit import AuditLogger
 from home_automation_system.services.p110_service import P110Service
 
 
@@ -107,7 +109,7 @@ def _github_user_id(access_token: AccessToken) -> int | None:
 
 def _authorize(
     tool_name: str, access_token: AccessToken, allowed_user_id: int
-) -> None:
+) -> int:
     """Log and enforce the numeric GitHub-ID allow-list for one tool call."""
     github_user_id: int | None = _github_user_id(access_token)
     authorized: bool = is_authorized_user(github_user_id, allowed_user_id)
@@ -119,11 +121,13 @@ def _authorize(
     )
     if not authorized:
         raise PermissionError("GitHub user is not authorized for this MCP server")
+    return github_user_id  # type: ignore[return-value]
 
 
 def create_server(
     settings: McpSettings | None = None,
     service_factory: Callable[[], P110Service] | None = None,
+    audit_logger: AuditLogger | None = None,
 ) -> FastMCP:
     """Create the authenticated MCP server with the configured tool set."""
     server_settings: McpSettings = settings or McpSettings.from_environment()
@@ -135,7 +139,7 @@ def create_server(
         required_scopes=["user"],
     )
     service_builder: Callable[[], P110Service] = service_factory or _create_service
-    service: P110Service = service_builder()
+    tools: HomeAutomationTools = HomeAutomationTools(service_builder(), audit_logger)
     mcp: FastMCP = FastMCP("Home Automation MCP", auth=provider)
 
     @mcp.tool
@@ -143,40 +147,40 @@ def create_server(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
         """Get the P110 on/off state."""
-        _authorize("get_plug_status", access_token, server_settings.allowed_github_user_id)
-        return await service.get_plug_status()
+        user_id: int = _authorize("get_plug_status", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_plug_status(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def turn_plug_on(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
         """Turn the P110 on."""
-        _authorize("turn_plug_on", access_token, server_settings.allowed_github_user_id)
-        return await service.turn_on()
+        user_id: int = _authorize("turn_plug_on", access_token, server_settings.allowed_github_user_id)
+        return await tools.turn_plug_on(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def turn_plug_off(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
         """Turn the P110 off."""
-        _authorize("turn_plug_off", access_token, server_settings.allowed_github_user_id)
-        return await service.turn_off()
+        user_id: int = _authorize("turn_plug_off", access_token, server_settings.allowed_github_user_id)
+        return await tools.turn_plug_off(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def toggle_plug(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
         """Invert the P110 state."""
-        _authorize("toggle_plug", access_token, server_settings.allowed_github_user_id)
-        return await service.toggle()
+        user_id: int = _authorize("toggle_plug", access_token, server_settings.allowed_github_user_id)
+        return await tools.toggle_plug(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_device_info(
         access_token: AccessToken = CurrentAccessToken(),
     ) -> dict[str, object]:
         """Get P110 device metadata."""
-        _authorize("get_device_info", access_token, server_settings.allowed_github_user_id)
-        return await service.get_device_info()
+        user_id: int = _authorize("get_device_info", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_device_info(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_device_usage(
@@ -187,8 +191,8 @@ def create_server(
         This is a summary of today and the current month. It is not a custom
         time-range query and does not answer questions about a specific night.
         """
-        _authorize("get_device_usage", access_token, server_settings.allowed_github_user_id)
-        return await service.get_device_usage()
+        user_id: int = _authorize("get_device_usage", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_device_usage(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_current_power(
@@ -198,8 +202,8 @@ def create_server(
 
         This is the current load only, not energy consumed over a time range.
         """
-        _authorize("get_current_power", access_token, server_settings.allowed_github_user_id)
-        return await service.get_current_power()
+        user_id: int = _authorize("get_current_power", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_current_power(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_energy_usage(
@@ -211,8 +215,8 @@ def create_server(
         energy, runtime, and estimated charge. It has no date parameters and
         does not return a custom 'last night' interval.
         """
-        _authorize("get_energy_usage", access_token, server_settings.allowed_github_user_id)
-        return await service.get_energy_usage()
+        user_id: int = _authorize("get_energy_usage", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_energy_usage(actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_energy_data(
@@ -227,8 +231,8 @@ def create_server(
         interval crossing midnight, use the two affected calendar dates and
         explain that the result is daily rather than an exact night-only total.
         """
-        _authorize("get_energy_data", access_token, server_settings.allowed_github_user_id)
-        return await service.get_energy_data(start_date, end_date)
+        user_id: int = _authorize("get_energy_data", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_energy_data(start_date, end_date, actor=f"github:{user_id}", source="mcp")
 
     @mcp.tool
     async def get_power_data(
@@ -245,8 +249,8 @@ def create_server(
         get_energy_usage or get_energy_data; do not report zero power readings
         as zero energy unless the requested UTC interval is correct.
         """
-        _authorize("get_power_data", access_token, server_settings.allowed_github_user_id)
-        return await service.get_power_data(start_datetime, end_datetime)
+        user_id: int = _authorize("get_power_data", access_token, server_settings.allowed_github_user_id)
+        return await tools.get_power_data(start_datetime, end_datetime, actor=f"github:{user_id}", source="mcp")
 
     return mcp
 

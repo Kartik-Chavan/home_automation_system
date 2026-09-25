@@ -1,0 +1,1 @@
+"""Lightweight Cohere chatbot integration."""
