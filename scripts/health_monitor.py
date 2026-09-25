@@ -81,6 +81,18 @@ def main() -> None:
             "checks": checks,
             "healthy": all(bool(check.get("ok")) for check in checks.values()),
         }, sort_keys=True, default=str))
+        api_ok: bool = bool(checks.get("process", {}).get("ok"))
+        device_ok: bool = all(
+            bool(checks.get(name, {}).get("ok"))
+            for name in ("device_info", "device_status")
+        )
+        print(
+            f"{datetime.now(timezone.utc).isoformat()} "
+            f"api={'reachable' if api_ok else 'UNREACHABLE'} "
+            f"device={'reachable' if device_ok else 'UNREACHABLE'} "
+            f"url={args.base_url}",
+            flush=True,
+        )
         if args.once:
             return
         time.sleep(max(args.interval, 1.0))

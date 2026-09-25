@@ -140,7 +140,25 @@ def build_tool_registry(shared: HomeAutomationTools) -> dict[str, RegisteredTool
         tool(toggle_plug),
         tool(set_plug_and_verify),
     ]
-    return {function.__name__: RegisteredTool(function) for function in functions}
+    registry: dict[str, RegisteredTool] = {
+        function.__name__: RegisteredTool(function) for function in functions
+    }
+
+    async def list_available_tools() -> dict[str, object]:
+        """List the available home-automation tools and explain each one."""
+        return {
+            "tools": [
+                {
+                    "name": name,
+                    "description": tool_spec.spec["function"]["description"],
+                    "parameters": tool_spec.spec["function"]["parameters"],
+                }
+                for name, tool_spec in registry.items()
+            ]
+        }
+
+    registry["list_available_tools"] = RegisteredTool(tool(list_available_tools))
+    return registry
 
 
 def _check_device(device_name: str | None) -> None:

@@ -9,6 +9,14 @@ from pathlib import Path
 from typing import Any
 
 
+_EMPTY_ADK_TABLES: tuple[str, ...] = (
+    "events",
+    "sessions",
+    "user_states",
+    "app_states",
+)
+
+
 class SessionStore:
     """Persist provider-compatible messages using only sqlite3."""
 
@@ -103,3 +111,22 @@ class SessionStore:
                 ON messages (user_id, session_id, sequence_id)
                 """
             )
+            self._drop_empty_adk_tables(connection)
+
+    @staticmethod
+    def _drop_empty_adk_tables(connection: sqlite3.Connection) -> None:
+        """Remove empty Google ADK tables without touching agent messages."""
+        existing_tables: set[str] = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+        for table_name in _EMPTY_ADK_TABLES:
+            if table_name not in existing_tables:
+                continue
+            row_count: int = int(
+                connection.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()[0]
+            )
+            if row_count == 0:
+                connection.execute(f'DROP TABLE "{table_name}"')

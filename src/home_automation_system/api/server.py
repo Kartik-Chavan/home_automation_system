@@ -7,6 +7,7 @@ import ipaddress
 import logging
 import os
 from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
@@ -177,21 +178,65 @@ def create_app(
 
     @app.get("/api/device/dashboard")
     async def device_dashboard(request: Request) -> dict[str, object]:
-        """Return a real P110 snapshot formatted for the browser dashboard."""
+        """Return a live P110 snapshot, including explicit device reachability."""
         request_id: str = request.state.request_id
         actor: str = request.state.actor
-        info: dict[str, object] = await tools.get_device_info(
-            request_id=request_id, actor=actor, source="api"
-        )
-        status: dict[str, object] = await tools.get_plug_status(
-            request_id=request_id, actor=actor, source="api"
-        )
-        power: dict[str, object] = await tools.get_current_power(
-            request_id=request_id, actor=actor, source="api"
-        )
-        energy: dict[str, object] = await tools.get_energy_usage(
-            request_id=request_id, actor=actor, source="api"
-        )
+        checked_at: str = datetime.now(timezone.utc).isoformat()
+        read_timeout: float = float(os.getenv("API_DEVICE_READ_TIMEOUT_SECONDS", "8"))
+        info: dict[str, object] = {}
+        status: dict[str, object] = {}
+        power: dict[str, object] = {}
+        energy: dict[str, object] = {}
+        device_error: str | None = None
+        power_error: bool = False
+        energy_error: bool = False
+        try:
+            info = await asyncio.wait_for(
+                tools.get_device_info(
+                    request_id=request_id, actor=actor, source="api"
+                ),
+                timeout=read_timeout,
+            )
+            status_result, power_result, energy_result = await asyncio.gather(
+                asyncio.wait_for(
+                    tools.get_plug_status(
+                        request_id=request_id, actor=actor, source="api"
+                    ),
+                    timeout=read_timeout,
+                ),
+                asyncio.wait_for(
+                    tools.get_current_power(
+                        request_id=request_id, actor=actor, source="api"
+                    ),
+                    timeout=read_timeout,
+                ),
+                asyncio.wait_for(
+                    tools.get_energy_usage(
+                        request_id=request_id, actor=actor, source="api"
+                    ),
+                    timeout=read_timeout,
+                ),
+                return_exceptions=True,
+            )
+            if isinstance(status_result, BaseException):
+                raise status_result
+            status = status_result
+            power_error = isinstance(power_result, BaseException)
+            energy_error = isinstance(energy_result, BaseException)
+            power = {} if power_error else power_result
+            energy = {} if energy_error else energy_result
+            if power_error:
+                LOGGER.warning("Dashboard power read failed request_id=%s", request_id)
+            if energy_error:
+                LOGGER.warning("Dashboard energy read failed request_id=%s", request_id)
+        except Exception as error:
+            LOGGER.warning(
+                "Dashboard device check failed request_id=%s error=%s: %s",
+                request_id,
+                type(error).__name__,
+                error,
+            )
+            device_error = "Plug did not respond. Check its power and Wi-Fi connection."
         model: str = str(info.get("model") or "Tapo plug")
         device: dict[str, object] = {
             "id": str(info.get("device_id") or info.get("ip") or "configured-device"),
@@ -201,12 +246,17 @@ def create_app(
             "firmware": str(info.get("fw_ver") or "Unknown"),
             "rssi": info.get("rssi"),
             "signal_level": info.get("signal_level"),
-            "is_on": bool(status.get("is_on", info.get("device_on", False))),
-            "power_w": _as_number(power.get("current_power", power.get("power", 0))),
-            "today_energy_kwh": _as_number(energy.get("today_energy", 0)) / 1000,
-            "month_energy_kwh": _as_number(energy.get("month_energy", 0)) / 1000,
-            "today_runtime_hours": _as_number(energy.get("today_runtime", 0)) / 60,
-            "month_runtime_hours": _as_number(energy.get("month_runtime", 0)) / 60,
+            "reachable": device_error is None,
+            "error": device_error,
+            "last_checked": checked_at,
+            "is_on": bool(status.get("is_on", info.get("device_on", False))) if device_error is None else None,
+            "power_w": _as_number(power.get("current_power", power.get("power", 0))) if device_error is None and not power_error else None,
+            "today_energy_kwh": _as_number(energy.get("today_energy", 0)) / 1000 if device_error is None and not energy_error else None,
+            "month_energy_kwh": _as_number(energy.get("month_energy", 0)) / 1000 if device_error is None and not energy_error else None,
+            "today_runtime_hours": _as_number(energy.get("today_runtime", 0)) / 60 if device_error is None and not energy_error else None,
+            "month_runtime_hours": _as_number(energy.get("month_runtime", 0)) / 60 if device_error is None and not energy_error else None,
+            "power_available": device_error is None and not power_error,
+            "energy_available": device_error is None and not energy_error,
         }
         return {"devices": [device]}
 

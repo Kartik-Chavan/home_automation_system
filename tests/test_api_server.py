@@ -1,4 +1,5 @@
 from typing import Any
+import asyncio
 
 import httpx
 import pytest
@@ -80,6 +81,71 @@ async def test_dashboard_returns_live_tool_data_in_ui_shape(monkeypatch: pytest.
     assert device["name"] == "Air_Cooler"
     assert device["power_w"] == 217
     assert device["today_energy_kwh"] == pytest.approx(0.296)
+    assert device["reachable"] is True
+    assert device["last_checked"]
+    assert device["power_available"] is True
+    assert device["energy_available"] is True
+
+
+@pytest.mark.asyncio
+async def test_dashboard_returns_unreachable_device_snapshot_on_tapo_error() -> None:
+    """A plug network failure returns explicit offline state instead of losing its card."""
+    class UnreachableTools(FakeTools):
+        async def get_device_info(self, **_: Any) -> dict[str, object]:
+            raise ConnectionError("Tapo device did not respond")
+
+    app = create_app(tools=UnreachableTools())  # type: ignore[arg-type]
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/device/dashboard")
+
+    assert response.status_code == 200
+    device = response.json()["devices"][0]
+    assert device["reachable"] is False
+    assert device["is_on"] is None
+    assert device["power_w"] is None
+    assert device["error"] == "Plug did not respond. Check its power and Wi-Fi connection."
+    assert "Tapo device did not respond" not in device["error"]
+    assert device["last_checked"]
+
+
+@pytest.mark.asyncio
+async def test_dashboard_marks_only_failed_optional_reading_unavailable() -> None:
+    """A power read failure does not disguise a successful status as offline."""
+    class PowerReadErrorTools(FakeTools):
+        async def get_current_power(self, **_: Any) -> dict[str, object]:
+            raise ConnectionError("power endpoint failed")
+
+    app = create_app(tools=PowerReadErrorTools())  # type: ignore[arg-type]
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/device/dashboard")
+
+    device = response.json()["devices"][0]
+    assert device["reachable"] is True
+    assert device["is_on"] is False
+    assert device["power_available"] is False
+    assert device["power_w"] is None
+
+
+@pytest.mark.asyncio
+async def test_dashboard_times_out_slow_device_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A hung plug request becomes a bounded offline result instead of stalling the page."""
+    class SlowDeviceTools(FakeTools):
+        async def get_device_info(self, **_: Any) -> dict[str, object]:
+            await asyncio.sleep(1)
+            return {"model": "P110"}
+
+    monkeypatch.setenv("API_DEVICE_READ_TIMEOUT_SECONDS", "0.01")
+    app = create_app(tools=SlowDeviceTools())  # type: ignore[arg-type]
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/device/dashboard")
+
+    assert response.status_code == 200
+    device = response.json()["devices"][0]
+    assert device["reachable"] is False
+    assert device["error"] == "Plug did not respond. Check its power and Wi-Fi connection."
 
 
 @pytest.mark.asyncio

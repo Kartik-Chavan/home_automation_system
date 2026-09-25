@@ -234,17 +234,35 @@ awake and running for the page to be available.
 
 ## Watchdog and Logs
 
-In a separate terminal/session, run:
+The Devices dashboard Wi-Fi button manually checks all configured devices.
+Device details refresh automatically every 15 seconds while visible; other
+views do not poll. An unreachable plug is shown in orange with its last check
+time and an error, and its control button is disabled until it responds.
+
+To monitor the server **from another Tailscale-connected computer**, check out
+the project there, install its requirements, and run this from PowerShell. Use
+the private HTTPS URL reported by `tailscale serve status`:
 
 ```powershell
-python .\scripts\health_monitor.py
+python .\scripts\health_monitor.py `
+	--base-url "https://your-hostname.your-tailnet.ts.net" `
+	--interval 300 `
+	--timeout 20
 ```
 
-The monitor checks process health, device info, and device status and writes
-JSONL records to `logs/health/checks.jsonl`. Application operation audits are
+Each run reports separately whether the API is reachable and whether real
+device-info and device-status reads succeeded. The example checks every five
+minutes; omit `--interval 300` to use the monitor's 60-second default, or use
+`--once` for a single check. The remote computer must be signed into the
+tailnet, and its Tailscale login email must be in `TAILSCALE_ALLOWED_USERS`.
+Serve forwards that identity to FastAPI; no API key or CORS setup is needed.
+
+The monitor writes JSONL records on the computer where it runs, at
+`logs/health/checks.jsonl`. To run it on the server itself, use the loopback
+default URL; on Android, run it in another Termux session using the active venv
+Python (`python scripts/health_monitor.py`). Application operation audits are
 in `logs/audit/events.jsonl`; persistent agent conversations are stored under
-`logs/agent/`. On Android, the same command can be run using the active venv
-Python (`python scripts/health_monitor.py`).
+`logs/agent/`.
 
 The current backend connects one configured P110. `TAPO_DEVICE_NAMES` does
 not itself configure multiple plugs; multi-device support requires adding
