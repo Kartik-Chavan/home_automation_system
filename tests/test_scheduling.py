@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -60,6 +61,10 @@ def test_normalize_schedule_rule_values() -> None:
     assert normalize_days("all") == "all"
     with pytest.raises(ValueError):
         normalize_days("monday")
+
+
+def test_termux_local_timezone_alias_is_available() -> None:
+    assert ZoneInfo("Asia/Calcutta").key == "Asia/Calcutta"
 
 
 def test_schedule_and_timer_tables_share_existing_database(tmp_path: Path) -> None:
