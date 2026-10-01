@@ -47,12 +47,26 @@ def probe(base_url: str, timeout_seconds: float) -> dict[str, Any]:
         try:
             with urlopen(request, timeout=timeout_seconds) as response:
                 body: str = response.read().decode("utf-8")
+                payload: object = json.loads(body)
+                http_ok: bool = 200 <= response.status < 300
+                device_ok: bool = http_ok
+                if name == "device_info":
+                    device_ok = http_ok and isinstance(payload, dict) and payload.get("reachable") is True
+                elif name == "device_status":
+                    device_ok = http_ok and isinstance(payload, dict) and isinstance(payload.get("is_on"), bool)
                 checks[name] = {
-                    "ok": 200 <= response.status < 300,
+                    "ok": device_ok,
                     "status": response.status,
                     "latency_ms": round((time.monotonic() - started) * 1000, 1),
-                    "body": json.loads(body),
+                    "body": payload,
                 }
+                if name == "device_info" and isinstance(payload, dict):
+                    checks[name]["last_ok_at"] = payload.get("last_ok_at")
+                    checks[name]["last_error_kind"] = payload.get("last_error_kind")
+                    if not device_ok:
+                        checks[name]["error"] = "Cached device snapshot reports the plug unreachable."
+                elif name == "device_status" and not device_ok:
+                    checks[name]["error"] = "Cached device state is unavailable."
         except (HTTPError, URLError, TimeoutError, ValueError, OSError) as error:
             checks[name] = {
                 "ok": False,

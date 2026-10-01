@@ -54,17 +54,20 @@ The `.env` variables are:
 TAPO_USERNAME=your-tapo-email@example.com
 TAPO_PASSWORD=your-tapo-password
 TAPO_DEVICE_IP=your-device-ip
+TAPO_DEVICE_ID=optional-stable-device-id
 COHERE_API_KEY=your-cohere-api-key
 COHERE_MODEL=command-a-03-2025
 TAPO_DEVICE_NAME=your-device-name
 TAILSCALE_AUTH_ENABLED=true
 TAILSCALE_ALLOWED_USERS=owner-tailscale-login@example.com,family-tailscale-login@example.com
+HOME_AUTOMATION_TIMEZONE=Asia/Kolkata
 ```
 
 Set `TAPO_DEVICE_IP` to the current local IP shown in the Tapo app.
 `TAPO_DEVICE_NAME` is an optional friendly label. The emails in
 `TAILSCALE_ALLOWED_USERS` must be the members' Tailscale account login emails,
-not their Tapo or GitHub emails.
+not their Tapo or GitHub emails. `TAPO_DEVICE_ID` is optional; when omitted,
+the configured device IP is used as the stable schedule/timer identifier.
 
 ## Run
 
@@ -234,10 +237,15 @@ awake and running for the page to be available.
 
 ## Watchdog and Logs
 
-The Devices dashboard Wi-Fi button manually checks all configured devices.
-Device details refresh automatically every 15 seconds while visible; other
-views do not poll. An unreachable plug is shown in orange with its last check
-time and an error, and its control button is disabled until it responds.
+One API background poller refreshes the Tapo snapshot every 15 seconds by
+default (`API_DEVICE_POLL_INTERVAL_SECONDS`); each bounded device read uses
+`API_DEVICE_READ_TIMEOUT_SECONDS` (8 seconds by default). Dashboard and device
+read endpoints return the cached snapshot immediately and never wait on a plug
+request. The snapshot includes `last_ok_at` and `last_error_kind`; a failed
+poll keeps the last good readings while marking the device unreachable. The
+Devices dashboard refresh button reloads this cached snapshot. An unreachable
+plug is shown in orange, and its control button is disabled until a later poll
+confirms it is reachable.
 
 To monitor the server **from another Tailscale-connected computer**, check out
 the project there, install its requirements, and run this from PowerShell. Use
@@ -250,10 +258,11 @@ python .\scripts\health_monitor.py `
 	--timeout 20
 ```
 
-Each run reports separately whether the API is reachable and whether real
-device-info and device-status reads succeeded. The example checks every five
-minutes; omit `--interval 300` to use the monitor's 60-second default, or use
-`--once` for a single check. The remote computer must be signed into the
+Each run reports separately whether the API is reachable and whether the
+latest cached device snapshot says the plug is reachable and has a known
+on/off state. It does not cause an extra plug read. The example checks every
+five minutes; omit `--interval 300` to use the monitor's 60-second default, or
+use `--once` for a single check. The remote computer must be signed into the
 tailnet, and its Tailscale login email must be in `TAILSCALE_ALLOWED_USERS`.
 Serve forwards that identity to FastAPI; no API key or CORS setup is needed.
 
@@ -267,6 +276,38 @@ in `logs/audit/events.jsonl`; persistent agent conversations are stored under
 The current backend connects one configured P110. `TAPO_DEVICE_NAMES` does
 not itself configure multiple plugs; multi-device support requires adding
 device entries to the backend.
+
+## Device Schedules and Timers
+
+Schedule rules are stored in `logs/agent/sessions.db` and restored into the
+in-process APScheduler when FastAPI starts. APScheduler runs inside the API
+process; no cron, Windows Task Scheduler, or Android job service is used.
+The pinned APScheduler 3.11.0 dependency is a pure-Python wheel; its reviewed
+installation dry run added no native/Rust build dependency.
+Schedule `time` values use the server's local wall clock; set
+`HOME_AUTOMATION_TIMEZONE` explicitly, especially on Android/proot, where the
+environment may otherwise report UTC (for example `Asia/Kolkata`).
+Timers store absolute UTC `fire_at` timestamps. If the server was stopped
+when a timer became due, startup reconciliation records how late it is, fires
+it immediately, and then marks it fired.
+
+The HTTP routes are:
+
+```text
+POST   /api/device/{device_id}/schedule    {"time":"05:30","days":"all","action":"off"}
+GET    /api/device/{device_id}/schedule
+PATCH  /api/schedule/{schedule_id}         {"enabled":false} or {"time":"06:15","days":"mon,wed,fri"}
+DELETE /api/schedule/{schedule_id}
+POST   /api/device/{device_id}/timer       {"action":"on","minutes":10}
+GET    /api/device/{device_id}/timer
+DELETE /api/timer/{timer_id}
+```
+
+Creation, edits, cancellation, reconciliation, and firing are written through
+the shared `logs/audit/events.jsonl` logger with request IDs and schedule/timer
+correlation metadata. The scheduler uses the same shared Tapo control layer as
+manual API and agent actions; SQLite remains authoritative if the process
+restarts.
 
 ## Network behavior
 
