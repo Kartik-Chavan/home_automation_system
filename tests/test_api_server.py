@@ -8,7 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from home_automation_system.api.server import create_app
-from home_automation_system.infrastructure.monitoring_logs import append_device_log
+from home_automation_system.infrastructure.monitoring_logs import (
+    append_device_log,
+    read_monitor_lines,
+)
 from home_automation_system.scheduling.store import ScheduleStore
 
 
@@ -300,6 +303,20 @@ async def test_monitor_logs_require_tailscale_allow_list(
 
     assert denied.status_code == 403
     assert allowed.status_code == 200
+
+
+def test_monitor_refresh_access_line_is_excluded_from_server_feed() -> None:
+    create_app(tools=FakeTools())  # type: ignore[arg-type]
+    logging.getLogger("uvicorn.access").info(
+        '%s - "%s %s HTTP/1.1" %s',
+        "127.0.0.1:12345",
+        "GET",
+        "/api/monitor/logs?source=server&limit=500",
+        200,
+    )
+
+    lines = read_monitor_lines("server", 500)
+    assert not any("/api/monitor/logs?source=server&limit=500" in line for line in lines)
 
 
 @pytest.mark.asyncio

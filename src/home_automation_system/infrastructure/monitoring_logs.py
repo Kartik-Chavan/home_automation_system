@@ -44,6 +44,13 @@ class _LineBuffer(logging.Handler):
             return list(self._lines)[-max(1, min(limit, 500)):]
 
 
+class _IgnoreMonitorPoll(logging.Filter):
+    """Keep the viewer's own refresh requests out of its server log feed."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/api/monitor/logs" not in record.getMessage()
+
+
 SERVER_LINES: deque[str] = deque(maxlen=SERVER_LOG_LIMIT)
 DEVICE_LINES: deque[str] = deque(maxlen=DEVICE_LOG_LIMIT)
 _SERVER_BUFFER_HANDLER: _LineBuffer = _LineBuffer(
@@ -53,6 +60,7 @@ _DEVICE_BUFFER_HANDLER: _LineBuffer = _LineBuffer(
     DEVICE_LINES, ("home_automation_system.device",)
 )
 _CONFIG_LOCK: threading.Lock = threading.Lock()
+_IGNORE_MONITOR_POLL: _IgnoreMonitorPoll = _IgnoreMonitorPoll()
 
 
 def configure_monitor_logging() -> None:
@@ -73,6 +81,8 @@ def configure_monitor_logging() -> None:
         access_logger: logging.Logger = logging.getLogger("uvicorn.access")
         access_logger.setLevel(logging.INFO)
         access_logger.propagate = False
+        if _IGNORE_MONITOR_POLL not in access_logger.filters:
+            access_logger.addFilter(_IGNORE_MONITOR_POLL)
         if not any(handler is _SERVER_BUFFER_HANDLER for handler in access_logger.handlers):
             access_logger.addHandler(_SERVER_BUFFER_HANDLER)
         if not any(
